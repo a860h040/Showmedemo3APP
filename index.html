@@ -1,49 +1,76 @@
-<!DOCTYPE HTML>
-<!--
-	Aerial by HTML5 UP
-	html5up.net | @ajlkn
-	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
--->
-<html>
-	<head>
-		<title>Aerial by HTML5 UP</title>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<link rel="stylesheet" href="assets/css/main.css" />
-		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
-	</head>
-	<body class="is-preload">
-		<div id="wrapper">
-			<div id="bg"></div>
-			<div id="overlay"></div>
-			<div id="main">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Weekly Clock Hours</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .week-line {
+      margin-bottom: 10px;
+    }
+    .week-line span {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>📊 Weekly Summary</h2>
+  <div id="weekly"></div>
 
-				<!-- Header -->
-					<header id="header">
-						<h1>Adam Jensen</h1>
-						<p>Security Chief &nbsp;&bull;&nbsp; Cyborg &nbsp;&bull;&nbsp; Never asked for this</p>
-						<nav>
-							<ul>
-								<li><a href="#" class="icon brands fa-twitter"><span class="label">Twitter</span></a></li>
-								<li><a href="#" class="icon brands fa-facebook-f"><span class="label">Facebook</span></a></li>
-								<li><a href="#" class="icon brands fa-dribbble"><span class="label">Dribbble</span></a></li>
-								<li><a href="#" class="icon brands fa-github"><span class="label">Github</span></a></li>
-								<li><a href="#" class="icon solid fa-envelope"><span class="label">Email</span></a></li>
-							</ul>
-						</nav>
-					</header>
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbzI18q0TwBmZMJ7SmW449VVQuWFgiyM_QocAZA0_Mf-Ax00Sr4ZKXxbaTpWrhUlum4R6Q/exec";
 
-				<!-- Footer -->
-					<footer id="footer">
-						<span class="copyright">&copy; Untitled. Design: <a href="http://html5up.net">HTML5 UP</a>.</span>
-					</footer>
+    function formatDateShort(dateStr) {
+      const d = new Date(dateStr);
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    }
 
-			</div>
-		</div>
-		<script>
-			window.onload = function() { document.body.classList.remove('is-preload'); }
-			window.ontouchmove = function() { return false; }
-			window.onorientationchange = function() { document.body.scrollTop = 0; }
-		</script>
-	</body>
+    async function loadWeeklyHours() {
+      try {
+        const response = await fetch(scriptURL);
+        const weeklyData = await response.json();
+
+        const weeklyContainer = document.getElementById('weekly');
+        weeklyContainer.innerHTML = '';
+
+        const now = new Date();
+        const thisSunday = new Date(now);
+        thisSunday.setDate(now.getDate() - now.getDay());
+        thisSunday.setHours(0, 0, 0, 0);
+        const thisWeekKey = thisSunday.toISOString().split('T')[0];
+
+        const sortedWeeks = Object.keys(weeklyData)
+          .sort((a, b) => new Date(b) - new Date(a))
+          .slice(0, 4);
+
+        sortedWeeks.forEach((weekKey) => {
+          const hoursFloat = weeklyData[weekKey];
+          const hours = Math.floor(hoursFloat);
+          const minutes = Math.round((hoursFloat - hours) * 60);
+
+          const label = weekKey === thisWeekKey
+            ? `This week (${formatDateShort(weekKey)})`
+            : `Week of (${formatDateShort(weekKey)})`;
+
+          weeklyContainer.innerHTML += `
+            <div class="week-line">${label}: <span>${hours} hours ${minutes} minutes</span></div>
+          `;
+        });
+
+        if (sortedWeeks.length === 0) {
+          weeklyContainer.innerHTML = 'No valid shifts recorded.';
+        }
+      } catch (err) {
+        document.getElementById('weekly').textContent = '❌ Failed to load weekly hours.';
+        console.error(err);
+      }
+    }
+
+    window.onload = loadWeeklyHours;
+  </script>
+</body>
 </html>
